@@ -117,10 +117,6 @@ class ReconciliationApp(tk.Tk):
         ttk.Button(file_frame, text="选择...", command=self.browse_pr_file).grid(row=1, column=2, padx=5, pady=5)
 
         file_frame.columnconfigure(1, weight=1)
-        
-        # btn_frame = ttk.Frame(file_frame)
-        # btn_frame.grid(row=2, column=0, columnspan=3, pady=5, sticky=tk.E)
-        # ttk.Button(btn_frame, text="重新选择目录文件", command=self.auto_detect_files).pack(side=tk.RIGHT)
 
         # 3. 控制与状态区域
         control_frame = ttk.Frame(self, padding=5)
@@ -128,6 +124,10 @@ class ReconciliationApp(tk.Tk):
 
         self.run_btn = ttk.Button(control_frame, text="开始执行对账核对", command=self.start_processing_thread)
         self.run_btn.pack(side=tk.LEFT, ipadx=15)
+
+        # 新增的软件说明按钮
+        self.intro_btn = ttk.Button(control_frame, text="软件使用说明", command=self.show_software_intro)
+        self.intro_btn.pack(side=tk.LEFT, padx=10, ipadx=10)
 
         self.status_label = ttk.Label(control_frame, textvariable=self.status_text, font=("Arial", 10, "bold"), foreground="blue")
         self.status_label.pack(side=tk.RIGHT, padx=10)
@@ -500,6 +500,55 @@ class ReconciliationApp(tk.Tk):
             return merged_map[(row, col)]
         return sheet.cell(row=row, column=col).value
     # ==============================================================
+
+    def show_software_intro(self):
+        """打开单独的窗口，向用户展示软件的功能介绍和业务说明"""
+        intro_win = tk.Toplevel(self)
+        intro_win.title("软件说明与介绍")
+        intro_win.geometry("660x550")
+        intro_win.minsize(550, 450)
+        intro_win.transient(self)  # 子窗口置于主窗口上层
+        intro_win.grab_set()       # 开启模态拦截，关闭前无法操作主窗口
+
+        # 文本展示区域
+        txt_area = ScrolledText(intro_win, wrap=tk.WORD, font=("Microsoft YaHei", 10), spacing1=3, spacing3=3)
+        txt_area.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+
+
+        intro_text = """一、 软件基本定位与命名
+
+  - 中文名： 流水预收快对
+  - 英文名：QuickFlow
+  - 定位：用于辅助财务人员进行“流水账目”与“预收款记录”自动核对与数据补全的本地工具。
+
+二、 软件主要功能
+
+1.  多格式账单自动读取与解析：
+      - 支持直接读取和解析 .xlsx、旧版 .xls（包括系统导出的伪 XML 2003 xls 格式）以及多种编码的 .csv 账单文件。
+      - 自动处理合并单元格，遇到多行共用一个日期或客户等情况时，会自动向下填充，防止漏读关键信息。
+
+2.  财务信息自动匹配与补全（反写填充）：
+      - 以“流水文件”为基准表，将“预收款记录”作为比对数据库。
+      - 匹配成功后，软件会自动在流水文件后方的空白列中，追加写入对应的：单据编号、结算客户编码、客户名称、收款金额以及收款备注.
+3.  多通道智能核对对账：
+      - 银行流水：针对中文客户，结合交易金额、交易日期、币种以及清洗后的客户名称（自动去除空格和符号差异）进行多维度比对；针对英文客户，主要通过折合本位币的金额进行快速匹配。
+      - 支付宝/微信：基于入账金额与入账日期（精确到天）进行快速匹配。
+
+4.  双向“1对1”避错校验：
+      - 遵循排他性比对原则。如果某笔流水在预收款中找到多笔同特征记录，或者多笔流水对应了同一笔预收款，软件会主动放弃自动关联并归为冲突项，交由人工核实，防止错误的资金关联。
+
+5.  无损原始排版输出：
+      - 输出结果时，不破坏原始流水文件原有的字体、颜色、边框等排版样式，不影响原本存在的计算公式和未变动列。
+
+6.  未匹配原因诊断报告：
+      - 运行完毕后，在同目录下自动生成一份 .txt 格式的诊断日志，清晰记录每一笔未能自动匹配成功的流水原因（如：金额不存在、交易日期不符、名称不符合、存在多笔重复特征等）。"""
+
+        txt_area.insert(tk.END, intro_text)
+        txt_area.configure(state='disabled') # 设置为只读
+
+        # 关闭按钮
+        close_btn = ttk.Button(intro_win, text="关闭说明", command=intro_win.destroy)
+        close_btn.pack(pady=10)
 
     def start_processing_thread(self):
         if not self.bank_file_path.get() or not self.pr_file_path.get():
